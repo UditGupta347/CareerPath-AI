@@ -1,0 +1,18 @@
+// Domain-specific tech helper - temporary file
+function getDomainSpecificTech(domain) {
+  const tech = {
+    'AI/ML': '- Gemini 2.0, GPT-4, Claude 3, LangChain, PyTorch',
+    'Web Development': '- React 19, Next.js 14+, Supabase, shadcn/ui',
+    'Blockchain': '- Ethereum, Solana, Web3.js, Hardhat',
+    'Cloud Computing': '- AWS, GCP, Kubernetes, Docker',
+    'Mobile Development': '- React Native, Flutter, Expo',
+    'IoT': '- Arduino, Raspberry Pi, MQTT, ESP32',
+    'Cybersecurity': '- Kali Linux, Metasploit, OWASP',
+    'Data Science': '- Python, Pandas, Scikit-learn, Jupyter',
+    'DevOps': '- Docker, Kubernetes, GitHub Actions, Terraform',
+    'AR/VR': '- Unity, Unreal Engine, Meta Quest SDK'
+  };
+  return tech[domain] || 'Modern technologies';
+}
+
+// Copy this function into geminiService.js before generateFullProject

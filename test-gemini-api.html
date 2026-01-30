@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #357ae8;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Gemini API Diagnostic Test</h1>
+        <p>This will test if your Gemini API key is working correctly.</p>
+
+        <label for="apiKey"><strong>Gemini API Key:</strong></label>
+        <input type="password" id="apiKey" placeholder="AIzaSy..." value="AIzaSyDEEZtXoWlid47PSoZNB3hazPGv8ovvWik" />
+
+        <button onclick="testAPI()" id="testBtn">Test API Connection</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        window.testAPI = async function () {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+            const testBtn = document.getElementById('testBtn');
+
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please enter an API key';
+                return;
+            }
+
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing...';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Testing Gemini API connection...';
+
+            try {
+                console.log('🔑 API Key:', apiKey.substring(0, 10) + '...');
+
+                // Import Gemini SDK
+                const { GoogleGenerativeAI } = await import('https://esm.run/@google/generative-ai');
+
+                console.log('📦 Gemini SDK loaded successfully');
+                resultDiv.textContent += '\n✅ SDK loaded successfully';
+
+                // Initialize API
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: 'gemini-1.5-flash',
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 100,
+                    }
+                });
+
+                console.log('🤖 Model initialized');
+                resultDiv.textContent += '\n🤖 Model initialized';
+
+                // Make test request
+                console.log('📡 Sending test request...');
+                resultDiv.textContent += '\n📡 Sending test request...';
+
+                const result = await model.generateContent('Say "Hello, API is working!" in a friendly way.');
+                const response = await result.response;
+                const text = response.text();
+
+                console.log('✅ Response received:', text);
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ SUCCESS! Gemini API is working!\n\n' +
+                    '📝 Response from AI:\n' + text + '\n\n' +
+                    '🎉 Your API key is valid and working correctly.\n' +
+                    'The network error in your app might be caused by:\n' +
+                    '• CORS issues (unlikely with official SDK)\n' +
+                    '• Import path issues in your app\n' +
+                    '• Browser extension blocking the request\n' +
+                    '• Check browser console for more details';
+
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+
+                let errorMsg = '❌ TEST FAILED\n\n';
+                errorMsg += 'Error: ' + error.message + '\n\n';
+
+                if (error.message?.includes('API key')) {
+                    errorMsg += '🔑 API Key Issue:\n';
+                    errorMsg += '• Your API key appears to be invalid or expired\n';
+                    errorMsg += '• Get a new key from: https://aistudio.google.com/app/apikey\n';
+                    errorMsg += '• Make sure you copied the entire key\n';
+                } else if (error.message?.includes('quota') || error.message?.includes('429')) {
+                    errorMsg += '⚠️ Quota Exceeded:\n';
+                    errorMsg += '• You\'ve hit your API usage limit\n';
+                    errorMsg += '• Wait a few minutes or check console.cloud.google.com\n';
+                } else if (error.message?.includes('403') || error.message?.includes('401')) {
+                    errorMsg += '🔐 Authentication Error:\n';
+                    errorMsg += '• API key is invalid or doesn\'t have permission\n';
+                    errorMsg += '• Generate a new key from Google AI Studio\n';
+                } else if (error.message?.includes('CORS')) {
+                    errorMsg += '🌐 CORS Error:\n';
+                    errorMsg += '• Browser is blocking the request\n';
+                    errorMsg += '• This shouldn\'t happen with official SDK\n';
+                    errorMsg += '• Try a different browser or disable extensions\n';
+                } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+                    errorMsg += '🌐 Network Error:\n';
+                    errorMsg += '• Check your internet connection\n';
+                    errorMsg += '• Try disabling VPN if using one\n';
+                    errorMsg += '• Check if firewall is blocking API requests\n';
+                } else {
+                    errorMsg += '⚠️ Unknown Error:\n';
+                    errorMsg += '• Check browser console (F12) for details\n';
+                    errorMsg += '• Try generating a new API key\n';
+                    errorMsg += '• Contact Google AI Studio support\n';
+                }
+
+                errorMsg += '\n📋 Full Error Details:\n' + JSON.stringify(error, null, 2);
+
+                resultDiv.className = 'result error';
+                resultDiv.textContent = errorMsg;
+
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = 'Test API Connection';
+            }
+        };
+    </script>
+</body>
+
+</html>
