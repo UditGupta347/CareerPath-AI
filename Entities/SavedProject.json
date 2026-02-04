@@ -1,0 +1,43 @@
+{
+  "name": "SavedProject",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Reference to the project"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who saved the project"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "in_progress",
+        "completed"
+      ],
+      "default": "saved"
+    },
+    "progress": {
+      "type": "number",
+      "default": 0,
+      "description": "Progress percentage"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes"
+    },
+    "completed_milestones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of completed milestone IDs"
+    }
+  },
+  "required": [
+    "project_id",
+    "user_email"
+  ]
+}

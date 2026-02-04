@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Environment Variables</title>
+</head>
+
+<body>
+    <h1>Environment Variables Test</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+
+        // Test if import.meta.env works
+        const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
+        let html = '<h2>Environment Variables:</h2>';
+        html += '<p><strong>VITE_GEMINI_API_KEY:</strong> ' + (geminiKey ? '✅ Present (' + geminiKey.substring(0, 10) + '...)' : '❌ Missing') + '</p>';
+        html += '<p><strong>VITE_OPENROUTER_API_KEY:</strong> ' + (openRouterKey ? '✅ Present (' + openRouterKey.substring(0, 10) + '...)' : '❌ Missing') + '</p>';
+
+        results.innerHTML = html;
+
+        console.log('VITE_GEMINI_API_KEY:', geminiKey ? 'Present' : 'Missing');
+        console.log('VITE_OPENROUTER_API_KEY:', openRouterKey ? 'Present' : 'Missing');
+    </script>
+</body>
+
+</html>

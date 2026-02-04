@@ -1,0 +1,101 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Project title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of the project"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "AI/ML",
+        "Web Development",
+        "Mobile Development",
+        "IoT",
+        "Cybersecurity",
+        "Blockchain",
+        "Cloud Computing",
+        "AR/VR",
+        "Data Science",
+        "DevOps"
+      ],
+      "description": "Project domain"
+    },
+    "complexity": {
+      "type": "string",
+      "enum": [
+        "Beginner",
+        "Intermediate",
+        "Advanced"
+      ],
+      "description": "Complexity level"
+    },
+    "tech_stack": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Technologies required"
+    },
+    "estimated_time": {
+      "type": "string",
+      "description": "Estimated completion time"
+    },
+    "use_cases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Real-world use cases"
+    },
+    "target_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Job roles this project helps with"
+    },
+    "roadmap": {
+      "type": "object",
+      "description": "Detailed project roadmap"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Learning resources"
+    },
+    "github_structure": {
+      "type": "string",
+      "description": "Recommended GitHub repo structure"
+    },
+    "architecture": {
+      "type": "string",
+      "description": "Architecture description"
+    },
+    "deployment_guide": {
+      "type": "string",
+      "description": "Deployment instructions"
+    },
+    "is_trending": {
+      "type": "boolean",
+      "default": false
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "domain",
+    "complexity"
+  ]
+}

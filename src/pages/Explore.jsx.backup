@@ -1,0 +1,268 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createPageUrl } from '@/utils';
+import { Loader2, Grid3X3, List } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+import AnimatedBackground from '@/components/ui/AnimatedBackground';
+import ProjectCard from '@/components/projects/ProjectCard';
+import ProjectFilters from '@/components/projects/ProjectFilters';
+
+export default function Explore() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState({ domain: 'All Domains', complexity: 'All Levels' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
+  const [user, setUser] = useState(null);
+
+  React.useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const userData = await api.auth.me();
+      setUser(userData);
+    } catch (e) { }
+  };
+
+  const { data: baseProjects = [], isLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => api.entities.Project.list('-created_date', 100)
+  });
+
+  const { data: savedProjects = [] } = useQuery({
+    queryKey: ['savedProjects', user?.email],
+    queryFn: () => api.entities.SavedProject.filter({ user_email: user?.email }),
+    enabled: !!user?.email
+  });
+
+  const saveProjectMutation = useMutation({
+    mutationFn: async (project) => {
+      const existing = savedProjects.find(sp => sp.project_id === project.id);
+      if (existing) {
+        await api.entities.SavedProject.delete(existing.id);
+      } else {
+        await api.entities.SavedProject.create({
+          project_id: project.id,
+          user_email: user.email,
+          status: 'saved'
+        });
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries(['savedProjects'])
+  });
+
+  // Handle AI project generation
+  const handleGenerateProjects = async () => {
+    if (!searchInput.trim()) {
+      alert('Please enter a search query to generate projects');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const domain = filters.domain !== 'All Domains' ? filters.domain : null;
+      const complexity = filters.complexity !== 'All Levels' ? filters.complexity : null;
+
+      const aiProjects = await generateProjectsFromSearch(searchInput, {
+        domain,
+        complexity,
+        count: 6
+      });
+
+      setGeneratedProjects(aiProjects);
+      setSearchQuery(searchInput); // Trigger filter update
+      console.log('✨ Generated projects:', aiProjects);
+    } catch (error) {
+      console.error('Failed to generate projects:', error);
+      alert('Failed to generate projects. Please check your Gemini API key in .env file.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Combine base projects with generated projects
+  const allProjects = [...baseProjects, ...generatedProjects];
+
+  const filteredProjects = allProjects.filter(project => {
+    const matchesDomain = filters.domain === 'All Domains' || project.domain === filters.domain;
+    const matchesComplexity = filters.complexity === 'All Levels' || project.complexity === filters.complexity;
+    const matchesSearch = !searchQuery ||
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.tech_stack?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesDomain && matchesComplexity && matchesSearch;
+  });
+
+  return (
+    <div className="min-h-screen pb-20">
+      <AnimatedBackground />
+
+      <div className="relative pt-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Explore Projects</h1>
+            <p className="text-slate-600">
+              {generatedProjects.length > 0
+                ? `Showing ${allProjects.length} projects (${generatedProjects.length} AI-generated)`
+                : `Discover ${allProjects.length}+ project ideas - search to generate more!`
+              }
+            </p>
+          </motion.div>
+
+          {/* AI Search Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-semibold text-slate-900">AI Project Generator</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Enter any topic, technology, or idea to generate personalized project recommendations
+            </p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGenerateProjects()}
+                  placeholder="e.g., 'AI chatbot with voice', 'blockchain voting', 'real-time dashboard'..."
+                  className="pl-9 h-11 bg-white border-indigo-200 focus:ring-2 focus:ring-indigo-500/20"
+                  disabled={isGenerating}
+                />
+              </div>
+              <Button
+                onClick={handleGenerateProjects}
+                disabled={isGenerating || !searchInput.trim()}
+                className="h-11 bg-indigo-600 hover:bg-indigo-700 gap-2 px-6"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* Filters */}
+          <div className="mb-6">
+            <ProjectFilters
+              filters={filters}
+              onFilterChange={setFilters}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          </div>
+
+          {/* View Toggle & Results Count */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-slate-500">
+              Showing {filteredProjects.length} projects
+              {generatedProjects.length > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
+                  <Sparkles className="w-3 h-3" />
+                  {generatedProjects.length} AI
+                </span>
+              )}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "h-9 w-9 rounded-lg",
+                  viewMode === 'grid' && "bg-slate-100"
+                )}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid3X3 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "h-9 w-9 rounded-lg",
+                  viewMode === 'list' && "bg-slate-100"
+                )}
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Projects Grid */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-20"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">No projects found</h3>
+              <p className="text-slate-500 mb-4">Try searching to generate new AI-powered project ideas!</p>
+              <Button
+                onClick={() => {
+                  setSearchInput('innovative web app');
+                  setTimeout(handleGenerateProjects, 100);
+                }}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate Sample Projects
+              </Button>
+            </motion.div>
+          ) : (
+            <div className={cn(
+              "grid gap-4",
+              viewMode === 'grid'
+                ? "sm:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1 max-w-3xl"
+            )}>
+              {filteredProjects.map((project, idx) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  delay={idx * 0.03}
+                  isSaved={savedProjects.some(sp => sp.project_id === project.id)}
+                  onViewDetails={() => navigate(createPageUrl('ProjectDetails') + `?id=${project.id}`)}
+                  onSave={() => saveProjectMutation.mutate(project)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
